@@ -1,9 +1,9 @@
 SHELL := /bin/bash
 
 define run_docker
-        nvidia-docker run --rm -it -u $$(id -u):$$(id -g) -v $$(pwd):$$(pwd) -w $$(pwd) \
-				          -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-						  carlosgalvezp/sfnd:latest $(1)
+        docker run --rm -it -u $$(id -u):$$(id -g) -v $$(pwd):$$(pwd) -w $$(pwd) \
+				   -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw --gpus=all \
+				    carlosgalvezp/sfnd:latest $(1)
 endef
 
 .PHONY: clean
