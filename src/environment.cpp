@@ -51,10 +51,11 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     // Create lidar sensor
     std::unique_ptr<Lidar> lidar(new Lidar(cars, ground_slope));
 
-    // Take a scan and render the rays
-    const pcl::PointCloud<pcl::PointXYZ>::Ptr rays = lidar->scan();
+    // Take a scan and render the rays and the point cloud
+    const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = lidar->scan();
     const Vect3 origin = lidar->position;
-    renderRays(viewer, origin, rays);
+    renderRays(viewer, origin, cloud);
+    renderPointCloud(viewer, cloud, "pointcloud");
 
     // TODO:: Create point processor
 
