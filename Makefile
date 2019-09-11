@@ -18,3 +18,7 @@ build:
 .PHONY: environment
 environment: build
 	$(call run_docker, ./build/environment)
+
+.PHONY: quiz-ransac
+quiz-ransac : build
+	$(call run_docker, ./build/src/quiz/ransac/quizRansac)
