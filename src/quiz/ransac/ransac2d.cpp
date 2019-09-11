@@ -12,7 +12,47 @@
 
 namespace
 {
-    float distance(const pcl::PointXYZ& point, const std::vector<float>& line)
+    enum class RansacModel
+    {
+        LINE,
+        PLANE
+    };
+
+    std::vector<float> fitModel(const pcl::PointXYZ& point1, const pcl::PointXYZ& point2)
+    {
+        const float x1 = point1.x;
+        const float x2 = point2.x;
+        const float y1 = point1.y;
+        const float y2 = point2.y;
+
+        return {y1 - y2, x1 - x2, x1*y2 - x2*y1};
+    }
+
+    std::vector<float> fitModel(const pcl::PointXYZ& point1,
+                                const pcl::PointXYZ& point2,
+                                const pcl::PointXYZ& point3)
+    {
+        const float x1 = point1.x;
+        const float x2 = point2.x;
+        const float x3 = point3.x;
+
+        const float y1 = point1.y;
+        const float y2 = point2.y;
+        const float y3 = point3.y;
+
+        const float z1 = point1.z;
+        const float z2 = point2.z;
+        const float z3 = point3.z;
+
+        const float i = (y2 - y1)*(z3 - z1) - (z2 - z1)*(y3 - y1);
+        const float j = (z2 - z1)*(x3 - x1) - (x2 - x1)*(z3 - z1);
+        const float k = (x2 - x1)*(y3 - y1) - (y2 - y1)*(x3 - x1);
+        const float d = -(i*x1 + j*y1 + k*z1);
+
+        return {i, j, k, d};
+    }
+
+    float distanceToLine(const pcl::PointXYZ& point, const std::vector<float>& line)
     {
         const float a = line[0];
         const float b = line[1];
@@ -22,6 +62,38 @@ namespace
         const float y = point.y;
 
         return std::fabs(a*x + b*y + c) / std::sqrt(a*a + b*b);
+    }
+
+    float distanceToPlane(const pcl::PointXYZ& point, const std::vector<float>& plane)
+    {
+        const float a = plane[0];
+        const float b = plane[1];
+        const float c = plane[2];
+        const float d = plane[3];
+
+        const float x = point.x;
+        const float y = point.y;
+        const float z = point.z;
+
+        return std::fabs(a*x + b*y + c*z + d) / std::sqrt(a*a + b*b + c*c);
+    }
+
+    float distance(const pcl::PointXYZ& point, const std::vector<float>&model)
+    {
+        if (model.size() == 3U)
+        {
+            return distanceToLine(point, model);
+        }
+        else if (model.size() == 4U)
+        {
+            return distanceToPlane(point, model);
+        }
+        else
+        {
+            std::cerr << "Unknown model with " << model.size() << " parameters" << std::endl;
+            return 0.0F;
+        }
+
     }
 }
 
@@ -65,7 +137,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData()
 pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData3D()
 {
     ProcessPointClouds<pcl::PointXYZ> pointProcessor;
-    return pointProcessor.loadPcd("../../../sensors/data/pcd/simpleHighway.pcd");
+    return pointProcessor.loadPcd("src/sensors/data/pcd/simpleHighway.pcd");
 }
 
 
@@ -79,13 +151,14 @@ pcl::visualization::PCLVisualizer::Ptr initScene()
       return viewer;
 }
 
-std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int maxIterations, float distanceTol)
+std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int maxIterations, float distanceTol,
+                               const RansacModel model_type)
 {
     std::unordered_set<int> inliersResult;
     srand(time(NULL));
 
-    std::random_device rd;  //Will be used to obtain a seed for the random number engine
-    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::seed_seq seed{12345};  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(seed); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_int_distribution<> dis(0, cloud->size() - 1);
 
     std::vector<float> best_line_model(3);
@@ -94,17 +167,27 @@ std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int ma
     // For max iterations
     for (int i = 0; i < maxIterations; ++i)
     {
-        // Randomly sample subset
-        const pcl::PointXYZ point1 = cloud->points[dis(gen)];
-        const pcl::PointXYZ point2 = cloud->points[dis(gen)];
+        std::vector<float> model;
 
-        const float x1 = point1.x;
-        const float x2 = point2.x;
-        const float y1 = point1.y;
-        const float y2 = point2.y;
-
-        // Fit model
-        std::vector<float> model = {y1 - y2, x1 - x2, x1*y2 - x2*y1};
+        // Randomly sample subset and fit model
+        if (model_type == RansacModel::LINE)
+        {
+            const pcl::PointXYZ point1 = cloud->points[dis(gen)];
+            const pcl::PointXYZ point2 = cloud->points[dis(gen)];
+            model = fitModel(point1, point2);
+        }
+        else if (model_type == RansacModel::PLANE)
+        {
+            const pcl::PointXYZ point1 = cloud->points[dis(gen)];
+            const pcl::PointXYZ point2 = cloud->points[dis(gen)];
+            const pcl::PointXYZ point3 = cloud->points[dis(gen)];
+            model = fitModel(point1, point2, point3);
+        }
+        else
+        {
+            std::cerr << "Unknown model" << std::endl;
+            break;
+        }
 
         // Measure distance between every point and fitted line
         int n_inliers = 0;
@@ -144,11 +227,13 @@ int main ()
     pcl::visualization::PCLVisualizer::Ptr viewer = initScene();
 
     // Create data
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData();
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData();
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData3D();
 
 
     // Change the max iteration and distance tolerance arguments for Ransac function
-    std::unordered_set<int> inliers = Ransac(cloud, 50, 0.5F);
+    // std::unordered_set<int> inliers = Ransac(cloud, 50, 0.5F, RansacModel::LINE);
+    std::unordered_set<int> inliers = Ransac(cloud, 50, 0.5F, RansacModel::PLANE);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloudInliers(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloudOutliers(new pcl::PointCloud<pcl::PointXYZ>());
