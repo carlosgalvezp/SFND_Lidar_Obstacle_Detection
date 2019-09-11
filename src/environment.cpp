@@ -57,7 +57,8 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     renderRays(viewer, origin, cloud);
     renderPointCloud(viewer, cloud, "pointcloud");
 
-    // TODO:: Create point processor
+    // Create point processor
+    ProcessPointClouds<pcl::PointXYZ> processor{};
 
 }
 
