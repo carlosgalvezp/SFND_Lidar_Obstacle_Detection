@@ -54,12 +54,15 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     // Take a scan and render the rays and the point cloud
     const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = lidar->scan();
     const Vect3 origin = lidar->position;
-    renderRays(viewer, origin, cloud);
-    renderPointCloud(viewer, cloud, "pointcloud");
+    // renderRays(viewer, origin, cloud);
+    // renderPointCloud(viewer, cloud, "pointcloud");
 
     // Create point processor
     ProcessPointClouds<pcl::PointXYZ> processor{};
 
+    auto segmentCloud = processor.SegmentPlane(cloud, 100, 0.2);
+    renderPointCloud(viewer,segmentCloud.first, "obstacleCloud", Color(1,0,0));
+    renderPointCloud(viewer,segmentCloud.second, "planeCloud", Color(0,1,0));
 }
 
 

@@ -42,8 +42,8 @@ template<typename PointT>
 std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SeparateClouds(pcl::PointIndices::Ptr inliers, typename pcl::PointCloud<PointT>::Ptr cloud)
 {
     // Create two new point clouds, one cloud with obstacles and other with segmented plane
-    typename pcl::PointCloud<PointT>::Ptr cloud_plane = new typename pcl::PointCloud<PointT>();
-    typename pcl::PointCloud<PointT>::Ptr cloud_obstacles = new typename pcl::PointCloud<PointT>();
+    typename pcl::PointCloud<PointT>::Ptr cloud_plane(new typename pcl::PointCloud<PointT>());
+    typename pcl::PointCloud<PointT>::Ptr cloud_obstacles(new typename pcl::PointCloud<PointT>());
 
     // Create extractor
     pcl::ExtractIndices<PointT> extract;
@@ -70,8 +70,8 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     auto startTime = std::chrono::steady_clock::now();
 
     // Find inliers for the cloud.
-    pcl::ModelCoefficients::Ptr plane_coefficients = new pcl::ModelCoefficients();
-    pcl::PointIndices::Ptr plane_inliers = new pcl::PointIndices();
+    pcl::ModelCoefficients::Ptr plane_coefficients(new pcl::ModelCoefficients());
+    pcl::PointIndices::Ptr plane_inliers(new pcl::PointIndices());
 
     // Create the segmentation object
     pcl::SACSegmentation<PointT> seg;
