@@ -17,7 +17,7 @@ build:
 
 .PHONY: environment
 environment: build
-	$(call run_docker, ./build/environment)
+	$(call run_docker, /bin/bash -c 'cd build && ./environment')
 
 .PHONY: quiz-ransac
 quiz-ransac : build
