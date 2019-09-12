@@ -72,15 +72,43 @@ void render2DTree(std::shared_ptr<Node> node, pcl::visualization::PCLVisualizer:
     }
 }
 
+void proximity(const int point_idx, const std::vector<std::vector<float>>& points,
+               KdTree* tree, const float distanceTol, std::vector<bool>& processed_points,
+               std::vector<int>& cluster)
+{
+    processed_points[point_idx] = true;
+    cluster.push_back(point_idx);
+
+    const std::vector<int> nearby_points = tree->search(points[point_idx], distanceTol);
+
+    for (const int nearby_point : nearby_points)
+    {
+        if (!processed_points[nearby_point])
+        {
+            proximity(nearby_point, points, tree, distanceTol, processed_points, cluster);
+        }
+    }
+}
+
 std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
 {
 
-    // TODO: Fill out this function to return list of indices for each cluster
-
+    // Return the list of indices for each cluster
     std::vector<std::vector<int>> clusters;
 
-    return clusters;
+    std::vector<bool> processed_points(points.size());
 
+    for (int i = 0; i < points.size(); ++i)
+    {
+        if (!processed_points[i])
+        {
+            std::vector<int> cluster;
+            proximity(i, points, tree, distanceTol, processed_points, cluster);
+            clusters.push_back(cluster);
+        }
+    }
+
+    return clusters;
 }
 
 int main ()
