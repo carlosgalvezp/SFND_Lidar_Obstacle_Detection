@@ -22,3 +22,7 @@ environment: build
 .PHONY: quiz-ransac
 quiz-ransac : build
 	$(call run_docker, ./build/src/quiz/ransac/quizRansac)
+
+.PHONY: quiz-cluster
+quiz-cluster : build
+	$(call run_docker, ./build/src/quiz/cluster/quizCluster)
