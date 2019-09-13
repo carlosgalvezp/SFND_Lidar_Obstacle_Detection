@@ -81,29 +81,23 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     }
 }
 
-void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
+void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,
+               ProcessPointClouds<pcl::PointXYZI>* processor,
+               const pcl::PointCloud<pcl::PointXYZI>::Ptr& inputCloud)
 {
     // ----------------------------------------------------
     // -----Open 3D viewer and display City Block     -----
     // ----------------------------------------------------
-
-    // Load point cloud
-    ProcessPointClouds<pcl::PointXYZI>* pointProcessorI = new ProcessPointClouds<pcl::PointXYZI>();
-    pcl::PointCloud<pcl::PointXYZI>::Ptr inputCloud = pointProcessorI->loadPcd("../src/sensors/data/pcd/data_1/0000000000.pcd");
-    // renderPointCloud(viewer,inputCloud,"inputCloud");
-
     // Filter point cloud
-    auto filterCloud = pointProcessorI->FilterCloud(inputCloud, 0.25F,
-                                                    Eigen::Vector4f(-10.0F, -6.0F, -3.0F, 1.0F),
-                                                    Eigen::Vector4f(30.0F, 7.0F, 1.0F, 1.0F));
+    auto filterCloud = processor->FilterCloud(inputCloud, 0.25F,
+                                              Eigen::Vector4f(-10.0F, -6.0F, -3.0F, 1.0F),
+                                              Eigen::Vector4f(30.0F, 7.0F, 1.0F, 1.0F));
     // renderPointCloud(viewer, filterCloud, "filterCloud");
 
-    // Create point processor
-    ProcessPointClouds<pcl::PointXYZI> processor{};
-
+    // Segment cloud between road and obstacles
     const int maxIterations = 100;
     const float distanceThreshold = 0.2F;
-    auto segmentCloud = processor.SegmentPlane(filterCloud, maxIterations, distanceThreshold);
+    auto segmentCloud = processor->SegmentPlane(filterCloud, maxIterations, distanceThreshold);
     renderPointCloud(viewer,segmentCloud.first, "obstacleCloud", Color(1,0,0));
     renderPointCloud(viewer,segmentCloud.second, "planeCloud", Color(0,1,0));
 
@@ -112,7 +106,7 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
     const int minSize = 50;
     const int maxSize = 1000;
     std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters =
-        processor.Clustering(segmentCloud.first, clusterTolerance, minSize, maxSize);
+        processor->Clustering(segmentCloud.first, clusterTolerance, minSize, maxSize);
 
     int clusterId = 0;
     std::vector<Color> colors = {Color(1,0,0), Color(0,1,0), Color(0,0,1)};
@@ -120,9 +114,9 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
     for(pcl::PointCloud<pcl::PointXYZI>::Ptr cluster : cloudClusters)
     {
         std::cout << "cluster size ";
-        processor.numPoints(cluster);
+        processor->numPoints(cluster);
         renderPointCloud(viewer,cluster,"obstCloud" + std::to_string(clusterId), colors[clusterId % 3]);
-        Box box = processor.BoundingBox(cluster);
+        Box box = processor->BoundingBox(cluster);
         renderBox(viewer,box,clusterId);
         ++clusterId;
     }
@@ -160,10 +154,26 @@ int main (int argc, char** argv)
     CameraAngle setAngle = XY;
     initCamera(setAngle, viewer);
     // simpleHighway(viewer);
-    cityBlock(viewer);
+
+    ProcessPointClouds<pcl::PointXYZI>* pointProcessorI = new ProcessPointClouds<pcl::PointXYZI>();
+    std::vector<boost::filesystem::path> stream = pointProcessorI->streamPcd("../src/sensors/data/pcd/data_1");
+    auto streamIterator = stream.begin();
+    pcl::PointCloud<pcl::PointXYZI>::Ptr inputCloudI;
 
     while (!viewer->wasStopped ())
     {
-        viewer->spinOnce ();
+        // Clear viewer
+        viewer->removeAllPointClouds();
+        viewer->removeAllShapes();
+
+        // Load pcd and run obstacle detection process
+        inputCloudI = pointProcessorI->loadPcd((*streamIterator).string());
+        cityBlock(viewer, pointProcessorI, inputCloudI);
+
+        streamIterator++;
+        if(streamIterator == stream.end())
+            streamIterator = stream.begin();
+
+        viewer->spinOnce();
     }
 }
