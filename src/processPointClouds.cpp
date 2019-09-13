@@ -21,19 +21,48 @@ void ProcessPointClouds<PointT>::numPoints(typename pcl::PointCloud<PointT>::Ptr
 
 
 template<typename PointT>
-typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(typename pcl::PointCloud<PointT>::Ptr cloud, float filterRes, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint)
+typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(
+    typename pcl::PointCloud<PointT>::Ptr cloud, float filterRes,
+    Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint)
 {
 
     // Time segmentation process
     auto startTime = std::chrono::steady_clock::now();
 
-    // TODO:: Fill in the function to do voxel grid point reduction and region based filtering
+    // Voxel grid point reduction
+    typename pcl::PointCloud<PointT>::Ptr cloud_filtered(new typename pcl::PointCloud<PointT>());
+    typename pcl::VoxelGrid<PointT> voxel_grid;
+    voxel_grid.setInputCloud(cloud);
+    voxel_grid.setLeafSize(filterRes, filterRes, filterRes);
+    voxel_grid.filter(*cloud_filtered);
+
+    // Region based filtering
+    typename pcl::PointCloud<PointT>::Ptr cropped_cloud(new typename pcl::PointCloud<PointT>());
+    typename pcl::CropBox<PointT> box_cropper;
+    box_cropper.setMin(minPoint);
+    box_cropper.setMax(maxPoint);
+    box_cropper.setInputCloud(cloud_filtered);
+    box_cropper.filter(*cropped_cloud);
+
+    // Remove roof of the car
+    pcl::IndicesPtr roof_indices(new std::vector<int>());
+    box_cropper.setMin(Eigen::Vector4f(-3.0F, -2.0F, -2.0F, 1.0F));
+    box_cropper.setMax(Eigen::Vector4f( 3.0F,  2.0F, 0.0F, 1.0F));
+    box_cropper.setInputCloud(cropped_cloud);
+    box_cropper.filter(*roof_indices);
+
+    typename pcl::PointCloud<PointT>::Ptr output_cloud(new typename pcl::PointCloud<PointT>());
+    typename pcl::ExtractIndices<PointT> extractor;
+    extractor.setInputCloud(cropped_cloud);
+    extractor.setIndices(roof_indices);
+    extractor.setNegative(true);
+    extractor.filter(*output_cloud);
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "filtering took " << elapsedTime.count() << " milliseconds" << std::endl;
 
-    return cloud;
+    return output_cloud;
 
 }
 
