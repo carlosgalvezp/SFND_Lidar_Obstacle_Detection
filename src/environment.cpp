@@ -94,9 +94,38 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
 
     // Filter point cloud
     auto filterCloud = pointProcessorI->FilterCloud(inputCloud, 0.25F,
-                                                    Eigen::Vector4f(-10.0F, -10.0F, -5.0F, 1.0F),
-                                                    Eigen::Vector4f(30.0F, 10.0F, 2.0F, 1.0F));
-    renderPointCloud(viewer, filterCloud, "filterCloud");
+                                                    Eigen::Vector4f(-10.0F, -6.0F, -3.0F, 1.0F),
+                                                    Eigen::Vector4f(30.0F, 7.0F, 1.0F, 1.0F));
+    // renderPointCloud(viewer, filterCloud, "filterCloud");
+
+    // Create point processor
+    ProcessPointClouds<pcl::PointXYZI> processor{};
+
+    const int maxIterations = 100;
+    const float distanceThreshold = 0.2F;
+    auto segmentCloud = processor.SegmentPlane(filterCloud, maxIterations, distanceThreshold);
+    renderPointCloud(viewer,segmentCloud.first, "obstacleCloud", Color(1,0,0));
+    renderPointCloud(viewer,segmentCloud.second, "planeCloud", Color(0,1,0));
+
+    // Cluster obstacles and render them
+    const float clusterTolerance = 0.5F;
+    const int minSize = 50;
+    const int maxSize = 1000;
+    std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters =
+        processor.Clustering(segmentCloud.first, clusterTolerance, minSize, maxSize);
+
+    int clusterId = 0;
+    std::vector<Color> colors = {Color(1,0,0), Color(0,1,0), Color(0,0,1)};
+
+    for(pcl::PointCloud<pcl::PointXYZI>::Ptr cluster : cloudClusters)
+    {
+        std::cout << "cluster size ";
+        processor.numPoints(cluster);
+        renderPointCloud(viewer,cluster,"obstCloud" + std::to_string(clusterId), colors[clusterId % 3]);
+        Box box = processor.BoundingBox(cluster);
+        renderBox(viewer,box,clusterId);
+        ++clusterId;
+    }
 }
 
 //setAngle: SWITCH CAMERA ANGLE {XY, TopDown, Side, FPS}
