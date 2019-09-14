@@ -19,4 +19,4 @@ target_include_directories(ransac PUBLIC .)
 target_link_libraries(ransac PUBLIC ${PCL_LIBRARIES})
 
 add_executable (quizRansac ransac_quiz.cpp ../../render/render.cpp)
-target_link_libraries (quizRansac ransac)
+target_link_libraries (quizRansac ransac process_point_clouds)

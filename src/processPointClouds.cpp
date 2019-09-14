@@ -1,7 +1,7 @@
 // PCL lib Functions for processing point clouds
-
 #include "processPointClouds.h"
 
+#include "ransac.h"
 
 //constructor:
 template<typename PointT>
@@ -101,24 +101,21 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     pcl::ModelCoefficients::Ptr plane_coefficients(new pcl::ModelCoefficients());
     pcl::PointIndices::Ptr plane_inliers(new pcl::PointIndices());
 
-    // Create the segmentation object
-    pcl::SACSegmentation<PointT> seg;
+    // Segment point cloud into plane + obstacles
+    const Ransac<PointT> ransac;
+    const std::unordered_set<int> inliers = ransac.run(cloud, maxIterations, distanceThreshold, RansacModel::PLANE);
 
-    seg.setOptimizeCoefficients(true);
-    seg.setModelType(pcl::SACMODEL_PLANE);
-    seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setMaxIterations(maxIterations);
-    seg.setDistanceThreshold(distanceThreshold);
-
-    // Segment the largest planar component
-    seg.setInputCloud (cloud);
-    seg.segment (*plane_inliers, *plane_coefficients);
-    assert(plane_inliers->indices.size () > 0U);
+    // Copy inliners into required data structure for next step
+    for (const int inlier : inliers)
+    {
+        plane_inliers->indices.push_back(inlier);
+    }
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "plane segmentation took " << elapsedTime.count() << " milliseconds" << std::endl;
 
+    // Separate segmented point clouds
     std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(plane_inliers,cloud);
     return segResult;
 }
@@ -229,3 +226,7 @@ std::vector<boost::filesystem::path> ProcessPointClouds<PointT>::streamPcd(std::
     return paths;
 
 }
+
+// Template specializations
+template class ProcessPointClouds<pcl::PointXYZ>;
+template class ProcessPointClouds<pcl::PointXYZI>;
