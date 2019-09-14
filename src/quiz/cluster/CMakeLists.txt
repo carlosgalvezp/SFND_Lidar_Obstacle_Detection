@@ -14,6 +14,9 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
 
+add_library(cluster cluster.cpp kdtree.cpp)
+target_include_directories(cluster PUBLIC .)
+target_link_libraries(cluster PUBLIC ${PCL_LIBRARIES})
 
-add_executable (quizCluster cluster.cpp ../../render/render.cpp)
-target_link_libraries (quizCluster process_point_clouds ${PCL_LIBRARIES})
+add_executable (quizCluster cluster_quiz.cpp ../../render/render.cpp)
+target_link_libraries (quizCluster cluster process_point_clouds)
