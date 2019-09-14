@@ -33,13 +33,15 @@ namespace
 
         return std::sqrt(sum);
     }
+
 }  // namespace
 
 Node::Node(const std::vector<float>& setPoint, const int setId, const int setDepth) :
     point(setPoint), id(setId), depth(setDepth)
 {}
 
-void KdTree::insert(const std::vector<float>& point, const int id)
+template <typename PointT>
+void KdTree<PointT>::insert(const std::vector<float>& point, const int id)
 {
     // Start at the root
     std::reference_wrapper<std::shared_ptr<Node>> current_node = root_;
@@ -64,7 +66,8 @@ void KdTree::insert(const std::vector<float>& point, const int id)
     current_node.get().reset(new Node(point, id, depth));
 }
 
-std::vector<int> KdTree::search(const std::vector<float>& target, float distanceTol) const
+template <typename PointT>
+std::vector<int> KdTree<PointT>::search(const std::vector<float>& target, float distanceTol) const
 {
     std::vector<int> ids;
 
@@ -101,7 +104,23 @@ std::vector<int> KdTree::search(const std::vector<float>& target, float distance
     return ids;
 }
 
-std::shared_ptr<Node> KdTree::getRoot() const
+template <typename PointT>
+std::shared_ptr<Node> KdTree<PointT>::getRoot() const
 {
     return root_;
 }
+
+template <typename PointT>
+void KdTree<PointT>::setInputCloud(const typename pcl::PointCloud<PointT>::Ptr& cloud)
+{
+    for (int id = 0; id < cloud->points.size(); ++id)
+    {
+        const PointT& point = cloud->points[id];
+        std::vector<float> point_values = {point.x, point.y, point.z};
+        insert(point_values, id);
+    }
+}
+
+// Explicit instantiations
+template class KdTree<pcl::PointXYZ>;
+template class KdTree<pcl::PointXYZI>;

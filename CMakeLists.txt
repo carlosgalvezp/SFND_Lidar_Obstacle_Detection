@@ -18,7 +18,7 @@ add_subdirectory(src/quiz/ransac)
 add_subdirectory(src/quiz/cluster)
 
 add_library(process_point_clouds src/processPointClouds.cpp)
-target_link_libraries(process_point_clouds PUBLIC ransac ${PCL_LIBRARIES})
+target_link_libraries(process_point_clouds PUBLIC ransac cluster ${PCL_LIBRARIES})
 
 add_executable (environment src/environment.cpp src/render/render.cpp)
 target_link_libraries (environment process_point_clouds)

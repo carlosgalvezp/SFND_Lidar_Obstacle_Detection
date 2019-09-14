@@ -88,12 +88,8 @@ int main ()
     //std::vector<std::vector<float>> points = { {-6.2,7}, {-6.3,8.4}, {-5.2,7.1}, {-5.7,6.3} };
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData(points);
 
-    KdTree tree;
-
-    for (int i=0; i<points.size(); i++)
-    {
-        tree.insert(points[i],i);
-    }
+    KdTree<pcl::PointXYZ> tree;
+    tree.setInputCloud(cloud);
 
     int it = 0;
     render2DTree(tree.getRoot(),viewer, window, it);
@@ -105,7 +101,8 @@ int main ()
     // Time segmentation process
     auto startTime = std::chrono::steady_clock::now();
 
-    std::vector<std::vector<int>> clusters = euclideanCluster(points, tree, 3.0);
+    EuclideanClustering<pcl::PointXYZ> euclidean_clustering;
+    std::vector<pcl::PointIndices> clusters = euclidean_clustering.run(cloud, tree, 3.0);
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
@@ -114,10 +111,10 @@ int main ()
     // Render clusters
     int clusterId = 0;
     std::vector<Color> colors = {Color(1,0,0), Color(0,1,0), Color(0,0,1)};
-    for(std::vector<int> cluster : clusters)
+    for(const pcl::PointIndices& cluster : clusters)
     {
         pcl::PointCloud<pcl::PointXYZ>::Ptr clusterCloud(new pcl::PointCloud<pcl::PointXYZ>());
-        for(int indice: cluster)
+        for(int indice: cluster.indices)
             clusterCloud->points.push_back(pcl::PointXYZ(points[indice][0],points[indice][1],0));
         renderPointCloud(viewer, clusterCloud,"cluster"+std::to_string(clusterId),colors[clusterId%3]);
         ++clusterId;

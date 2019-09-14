@@ -2,6 +2,7 @@
 #include "processPointClouds.h"
 
 #include "ransac.h"
+#include "cluster.h"
 
 //constructor:
 template<typename PointT>
@@ -130,19 +131,14 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
 
     std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
 
-    // Perform euclidean clustering to group detected obstacles
-    // Creating the KdTree object for the search method of the extraction
-    typename pcl::search::KdTree<PointT>::Ptr tree(new typename pcl::search::KdTree<PointT>);
-    tree->setInputCloud (cloud);
+    // Create the KdTree object for the search method of the extraction
+    KdTree<PointT> tree;
+    tree.setInputCloud(cloud);
 
-    std::vector<pcl::PointIndices> cluster_indices;
-    typename pcl::EuclideanClusterExtraction<PointT> ec;
-    ec.setClusterTolerance(clusterTolerance); // 2cm
-    ec.setMinClusterSize(minSize);
-    ec.setMaxClusterSize(maxSize);
-    ec.setSearchMethod(tree);
-    ec.setInputCloud(cloud);
-    ec.extract(cluster_indices);
+    // Run euclidean clustering
+    const EuclideanClustering<PointT> euclidean_clustering;
+    std::vector<pcl::PointIndices> cluster_indices = euclidean_clustering.run(
+        cloud, tree, clusterTolerance, minSize, maxSize);
 
     // Create output
     typename pcl::ExtractIndices<PointT> index_extractor;

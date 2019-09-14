@@ -3,18 +3,19 @@
 
 #include <pcl/common/common.h>
 
+#include <limits>
 #include <vector>
 
 #include "kdtree.h"
 
-std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points,
-                                               const KdTree& tree,
-                                               float distanceTol);
-
 template <typename PointT>
-std::vector<pcl::PointIndices> euclideanCluster(const typename pcl::PointCloud<PointT>::Ptr& points,
-                                                const KdTree& tree,
-                                                float distanceTol);
-
+class EuclideanClustering
+{
+ public:
+    std::vector<pcl::PointIndices> run(const typename pcl::PointCloud<PointT>::Ptr& points,
+                                       const KdTree<PointT>& tree, float distanceTol,
+                                       const int min_size = 1,
+                                       const int max_size = std::numeric_limits<int>::max()) const;
+};
 
 #endif  // CLUSTER_H_
