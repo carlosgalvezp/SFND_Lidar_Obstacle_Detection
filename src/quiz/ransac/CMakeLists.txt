@@ -14,10 +14,9 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
 
+add_library(ransac ransac.cpp)
+target_include_directories(ransac PUBLIC .)
+target_link_libraries(ransac PUBLIC ${PCL_LIBRARIES})
 
-add_executable (quizRansac ransac2d.cpp ../../render/render.cpp)
-target_link_libraries (quizRansac ${PCL_LIBRARIES})
-
-
-
-
+add_executable (quizRansac ransac_quiz.cpp ../../render/render.cpp)
+target_link_libraries (quizRansac ransac)
