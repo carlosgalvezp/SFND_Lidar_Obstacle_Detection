@@ -1,6 +1,20 @@
 // PCL lib Functions for processing point clouds
 #include "processPointClouds.h"
 
+#include <pcl/io/pcd_io.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/crop_box.h>
+#include <pcl/common/transforms.h>
+
+#include <iostream>
+#include <string>
+#include <vector>
+#include <ctime>
+#include <chrono>
+
+#include "render/box.h"
+
 #include "ransac.h"
 #include "cluster.h"
 
