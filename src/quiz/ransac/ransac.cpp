@@ -91,7 +91,7 @@ namespace
 }
 
 template <typename PointT>
-std::unordered_set<int> Ransac<PointT>::run(const typename pcl::PointCloud<PointT>::Ptr cloud,
+std::unordered_set<int> Ransac<PointT>::run(const typename pcl::PointCloud<PointT>::Ptr& cloud,
                                             const int maxIterations,
                                             const float distanceTol,
                                             const RansacModel model_type) const
@@ -149,7 +149,7 @@ std::unordered_set<int> Ransac<PointT>::run(const typename pcl::PointCloud<Point
         }
     }
 
-    // Return indices of inliers from fitted line with most inliers
+    // Return indices of inliers according to best model
     for (int i = 0; i < cloud->points.size(); ++i)
     {
         if (distance(cloud->points[i], best_model) < distanceTol)

@@ -18,7 +18,6 @@ struct Node
     Node(const std::vector<float>& setPoint, const int setId, const int setDepth);
 };
 
-
 /// \brief Class implementing a KD-tree.
 template <typename PointT>
 class KdTree
