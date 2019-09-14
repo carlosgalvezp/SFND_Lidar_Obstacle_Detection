@@ -103,7 +103,7 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,
 
     // Cluster obstacles and render them
     const float clusterTolerance = 0.5F;
-    const int minSize = 50;
+    const int minSize = 10;
     const int maxSize = 1000;
     std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters =
         processor->Clustering(segmentCloud.first, clusterTolerance, minSize, maxSize);
